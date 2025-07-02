@@ -1,17 +1,19 @@
 {
   "manifest_version": 3,
   "name": "Aigei Audio Downloader",
-  "version": "1.1",
-  "description": "Tự động bắt và tải file âm thanh từ aigei.com",
+  "version": "2.0",
+  "description": "Tự động bắt và tải file âm thanh từ aigei.com, tối ưu cho IDM.",
   "minimum_chrome_version": "114",
   
   "permissions": [
     "activeTab",
+    "downloads",
     "webRequest",
     "storage",
     "scripting",
     "tabs",
-    "contextMenus"
+    "contextMenus",
+    "declarativeNetRequest"
   ],
   
   "host_permissions": [
@@ -22,14 +24,18 @@
     "service_worker": "background.js"
   },
   
-  "content_scripts": [
-    {
-      "matches": ["*://*.aigei.com/*"],
-      "js": ["content.js"],
-      "run_at": "document_start"
-    }
-  ],  "action": {
+  "action": {
     "default_popup": "popup.html",
     "default_title": "Aigei Audio Downloader"
+  },
+
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "ruleset_1",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
   }
 }
