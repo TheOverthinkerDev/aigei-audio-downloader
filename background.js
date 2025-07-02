@@ -1,51 +1,79 @@
 // Background script để bắt các request âm thanh
 let audioUrls = [];
 
+// Function to update the badge count on the extension icon
+function updateBadge() {
+  chrome.storage.local.get(['audioUrls'], (result) => {
+    const count = result.audioUrls ? result.audioUrls.length : 0;
+    chrome.action.setBadgeText({ text: count > 0 ? count.toString() : '' });
+    if (count > 0) {
+      // Set a noticeable color for the badge
+      chrome.action.setBadgeBackgroundColor({ color: '#4CAF50' }); // Green
+    }
+  });
+}
+
+// Khởi tạo danh sách URL từ storage khi service worker khởi động
+chrome.storage.local.get(['audioUrls'], (result) => {
+  if (result.audioUrls) {
+    audioUrls = result.audioUrls;
+    console.log('Đã khôi phục danh sách audio URLs từ storage:', audioUrls);
+  }
+  updateBadge(); // Update badge on startup
+});
+
 // Lắng nghe các network request
 chrome.webRequest.onBeforeRequest.addListener(
   function(details) {
-    // Kiểm tra nếu URL chứa file audio từ aigei
-    const isAudioUrl = details.url.includes('aigei.com') && 
-        (details.url.includes('.mp3') || 
-         details.url.includes('.wav') || 
-         details.url.includes('.m4a') ||
-         details.url.includes('.flac') ||
-         details.url.includes('.aac') ||
-         details.url.includes('audio/') ||
-         (details.url.includes('/src/aud/') && details.url.includes('.')));
-    
-    if (isAudioUrl) {
-      console.log('Phát hiện audio URL:', details.url);
+    // Kiểm tra nếu là media request hoặc có đuôi file âm thanh
+    const isMediaRequest = details.type === 'media';
+    const hasAudioExtension = details.url.endsWith('.mp3') || 
+                            details.url.endsWith('.wav') || 
+                            details.url.endsWith('.m4a') ||
+                            details.url.endsWith('.flac') ||
+                            details.url.endsWith('.aac');
+
+    if (details.url.includes('aigei.com') && (isMediaRequest || hasAudioExtension)) {
+      console.log('Phát hiện media URL:', details.url, 'Type:', details.type);
       
-      // Kiểm tra xem URL đã tồn tại chưa để tránh duplicate
-      const isDuplicate = audioUrls.some(audio => audio.url === details.url);
-      
-      if (!isDuplicate) {
-        // Lưu URL vào storage
-        const audioData = {
-          url: details.url,
-          timestamp: Date.now(),
-          tabId: details.tabId,
-          filename: extractFilenameFromUrl(details.url)
-        };
+      // Sử dụng hàm async để xử lý storage một cách an toàn
+      (async () => {
+        // Lấy danh sách mới nhất từ storage để tránh ghi đè
+        const result = await chrome.storage.local.get(['audioUrls']);
+        let currentUrls = result.audioUrls || [];
+
+        const isDuplicate = currentUrls.some(audio => audio.url === details.url);
         
-        audioUrls.push(audioData);
-        
-        // Lưu vào Chrome storage
-        chrome.storage.local.set({
-          'audioUrls': audioUrls
-        });
-        
-        // Gửi thông báo đến popup nếu đang mở
-        chrome.runtime.sendMessage({
-          type: 'NEW_AUDIO_URL',
-          data: audioData
-        }).catch(() => {
-          // Popup có thể chưa mở, bỏ qua lỗi
-        });
-        
-        console.log('Đã lưu audio URL:', audioData.filename);
-      }
+        if (!isDuplicate) {
+          const audioData = {
+            url: details.url,
+            timestamp: Date.now(),
+            tabId: details.tabId,
+            filename: extractFilenameFromUrl(details.url)
+          };
+          
+          currentUrls.push(audioData);
+          audioUrls = currentUrls; // Cập nhật cache trong bộ nhớ
+          
+          await chrome.storage.local.set({ 'audioUrls': currentUrls });
+          updateBadge(); // Update badge when new URL is added
+
+          // --- NEW: Show the Download Now/Later prompt instead of just a notification ---
+          if (details.tabId > 0) { // Ensure we have a valid tab to inject into
+            injectDownloadPrompt(audioData.url, audioData.filename, details.tabId);
+          }
+          
+          // Gửi thông báo đến popup nếu đang mở để cập nhật danh sách
+          chrome.runtime.sendMessage({
+            type: 'NEW_AUDIO_URL',
+            data: audioData
+          }).catch(() => {
+            // Popup có thể chưa mở, bỏ qua lỗi
+          });
+          
+          console.log('Đã lưu audio URL:', audioData.filename);
+        }
+      })();
     }
   },
   {
@@ -104,48 +132,63 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 });
 
 // Xử lý download - Tập trung vào IDM integration
-chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log('Background received message:', message.type, message);
   
   if (message.type === 'DOWNLOAD_AUDIO') {
-    const { url, filename, tabId } = message;
-    console.log(`Starting download for: ${url}`);
+    const { url, filename } = message;
 
-    // Phương pháp 1: Dùng chrome.downloads.download trực tiếp
-    // IDM sẽ bắt link này. Header Referer được thêm tự động bởi declarativeNetRequest
-    chrome.downloads.download({
-      url: url,
-      filename: filename || 'aigei_download.mp3',
-      saveAs: true
-    }, (downloadId) => {
-      if (chrome.runtime.lastError) {
-        console.error('Download failed, falling back to clipboard method:', chrome.runtime.lastError.message);
-        // Nếu lỗi (ví dụ: do Chrome chặn), chuyển sang phương pháp 2
-        injectIDMScript(url, filename, tabId, sendResponse);
-      } else {
-        console.log(`Download started with ID: ${downloadId}`);
-        sendResponse({ success: true, method: 'direct_download' });
+    const startDownloadInjection = (tabId) => {
+      if (!tabId) {
+        console.error("Could not determine the target tab for injection.");
+        sendResponse({ success: false, error: "Could not find active tab." });
+        return;
       }
-    });
+      
+      console.log(`Download request for: ${url}. Forcing IDM/Clipboard method on tab ${tabId}.`);
+      // Bỏ qua chrome.downloads.download và đi thẳng đến phương pháp clipboard/IDM
+      // vì đây là cách đáng tin cậy nhất cho các URL được bảo vệ.
+      injectIDMScript(url, filename, tabId, sendResponse);
+    };
+
+    // Lấy tabId một cách an toàn. Ưu tiên sender.tab.id, nếu không có thì query tab active.
+    if (sender.tab && sender.tab.id) {
+      startDownloadInjection(sender.tab.id);
+    } else {
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs && tabs.length > 0) {
+          startDownloadInjection(tabs[0].id);
+        } else {
+          console.error("No active tab found to inject the script.");
+          sendResponse({ success: false, error: "No active tab found." });
+        }
+      });
+    }
 
     return true; // Giữ kênh message mở cho các phản hồi bất đồng bộ
   }
   
   if (message.type === 'GET_AUDIO_URLS') {
-    try {
-      const result = await chrome.storage.local.get(['audioUrls']);
-      sendResponse({ audioUrls: result.audioUrls || [] });
-    } catch (e) {
-      console.error('Error getting audio URLs:', e);
-      sendResponse({ audioUrls: [] });
-    }
-    return true;
+    (async () => {
+        try {
+            const result = await chrome.storage.local.get(['audioUrls']);
+            sendResponse({ audioUrls: result.audioUrls || [] });
+        } catch (e) {
+            console.error('Error getting audio URLs:', e);
+            sendResponse({ audioUrls: [] });
+        }
+    })();
+    return true; // Correctly return true for async response
   }
   
   if (message.type === 'CLEAR_AUDIO_URLS') {
-    audioUrls = [];
-    await chrome.storage.local.set({ 'audioUrls': [] });
-    sendResponse({ success: true });
+    (async () => {
+        audioUrls = [];
+        await chrome.storage.local.set({ 'audioUrls': [] });
+        updateBadge(); // Update badge when list is cleared
+        sendResponse({ success: true });
+    })();
+    return true; // Correctly return true for async response
   }
 });
 
@@ -194,85 +237,119 @@ function extractFilenameFromUrl(url) {
 // Cleanup old URLs (giữ trong 1 giờ)
 setInterval(() => {
   const oneHourAgo = Date.now() - (60 * 60 * 1000);
-  audioUrls = audioUrls.filter(audio => audio.timestamp > oneHourAgo);
-  chrome.storage.local.set({ 'audioUrls': audioUrls });
+  (async () => {
+    const result = await chrome.storage.local.get(['audioUrls']);
+    const currentUrls = result.audioUrls || [];
+    const updatedUrls = currentUrls.filter(audio => audio.timestamp > oneHourAgo);
+    await chrome.storage.local.set({ 'audioUrls': updatedUrls });
+    audioUrls = updatedUrls; // Update in-memory cache
+    updateBadge(); // Update badge after cleanup
+  })();
 }, 10 * 60 * 1000); // Chạy mỗi 10 phút
+
+// --- NEW: Function to inject the "Download Now / Later" prompt ---
+function injectDownloadPrompt(url, filename, tabId) {
+  chrome.scripting.executeScript({
+    target: { tabId: tabId },
+    func: (downloadUrl, downloadFilename) => {
+      // Remove any old prompt first
+      const oldPrompt = document.getElementById('aigei-download-prompt');
+      if (oldPrompt) oldPrompt.remove();
+
+      const prompt = document.createElement('div');
+      prompt.id = 'aigei-download-prompt';
+      prompt.style.cssText = `
+        position: fixed; top: 20px; right: 20px; 
+        background: white; color: #333; 
+        padding: 15px; border-radius: 10px; 
+        z-index: 10000; font-family: Arial, sans-serif; 
+        max-width: 320px; 
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        border: 1px solid #ddd;
+        font-size: 14px;
+        transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+        transform: translateY(-200%);
+        opacity: 0;
+      `;
+
+      prompt.innerHTML = `
+        <div style="font-weight: bold; margin-bottom: 8px;">🎵 Audio File Detected</div>
+        <div style="margin-bottom: 15px; word-wrap: break-word; font-size: 13px; color: #555;">${downloadFilename}</div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button id="aigei-later-btn" style="background: #eee; border: 1px solid #ccc; padding: 8px 15px; border-radius: 5px; cursor: pointer;">Later</button>
+          <button id="aigei-now-btn" style="background: #2196F3; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer;">Download Now</button>
+        </div>
+      `;
+
+      document.body.appendChild(prompt);
+      
+      // Animate in
+      setTimeout(() => { 
+        prompt.style.transform = 'translateY(0)';
+        prompt.style.opacity = '1';
+      }, 50);
+
+      const dismissPrompt = () => {
+        prompt.style.transform = 'translateY(-200%)';
+        prompt.style.opacity = '0';
+        setTimeout(() => prompt.remove(), 300);
+      };
+
+      document.getElementById('aigei-later-btn').onclick = dismissPrompt;
+
+      document.getElementById('aigei-now-btn').onclick = () => {
+        chrome.runtime.sendMessage({ type: 'DOWNLOAD_AUDIO', url: downloadUrl, filename: downloadFilename });
+        dismissPrompt();
+      };
+      
+      // Auto-dismiss after 20 seconds
+      setTimeout(() => {
+        if (document.body.contains(prompt)) {
+          dismissPrompt();
+        }
+      }, 20000);
+    },
+    args: [url, filename]
+  });
+}
 
 // Function inject IDM script vào tab
 function injectIDMScript(url, filename, tabId, sendResponse) {
   chrome.scripting.executeScript({
     target: { tabId: tabId },
     func: function(downloadUrl, downloadFilename) {
-      console.log('Injecting IDM helper script for:', downloadUrl);
+      console.log('Injecting silent IDM trigger for:', downloadUrl);
       
-      // The most reliable method: copy to clipboard and show instructions.
+      // --- Create a hidden iframe to trigger the IDM download silently ---
+      try {
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = downloadUrl;
+        document.body.appendChild(iframe);
+        console.log('Created a hidden iframe to trigger the IDM download.');
+        
+        // Clean up the iframe after a few seconds
+        setTimeout(() => {
+          if (iframe.parentElement) {
+            iframe.remove();
+          }
+        }, 5000);
+      } catch (e) {
+        console.error('Failed to create the iframe for automatic IDM trigger:', e);
+      }
+
+      // --- Fallback: The most reliable method is still copying to clipboard ---
       if (navigator.clipboard) {
         navigator.clipboard.writeText(downloadUrl).then(() => {
-          console.log('URL copied to clipboard for IDM');
+          console.log('URL copied to clipboard as a reliable fallback for IDM.');
         }).catch((error) => {
           console.error('Clipboard copy failed:', error);
         });
       }
       
-      // Show a clear, helpful notification on the page.
-      const oldNotification = document.getElementById('aigei-idm-notification');
-      if (oldNotification) oldNotification.remove();
-
-      const notification = document.createElement('div');
-      notification.id = 'aigei-idm-notification';
-      notification.style.cssText = `
-        position: fixed; top: 20px; right: 20px; 
-        background: #2196F3; color: white; 
-        padding: 20px; border-radius: 12px; 
-        z-index: 99999; font-family: Arial, sans-serif; 
-        max-width: 350px; 
-        box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-        border: 2px solid #1976D2;
-        transition: opacity 0.4s, transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
-        transform: translateX(110%);
-        opacity: 0;
-      `;
+      // --- Notification has been removed as per user request ---
       
-      notification.innerHTML = `
-        <div style="font-size: 16px; font-weight: bold; margin-bottom: 10px;">
-          🎵 IDM Download Ready
-        </div>
-        <div style="margin-bottom: 15px; font-size: 14px; line-height: 1.4;">
-          <strong>URL has been copied to your clipboard!</strong><br>
-          Open IDM and click "Add Url" to begin the download.
-        </div>
-        <div style="font-size: 12px; opacity: 0.9; margin-bottom: 10px;">
-          This is the most reliable way to download protected files.
-        </div>
-        <button onclick="this.parentElement.style.transform='translateX(110%)'; this.parentElement.style.opacity=0; setTimeout(() => this.parentElement.remove(), 500)" 
-                style="float: right; background: rgba(255,255,255,0.2); 
-                       border: 1px solid rgba(255,255,255,0.3); 
-                       color: white; cursor: pointer; 
-                       padding: 5px 10px; border-radius: 4px;">
-          ✓ Got it
-        </button>
-        <div style="clear: both;"></div>
-      `;
-      
-      if (document.body) {
-        document.body.appendChild(notification);
-        // Animate in
-        setTimeout(() => {
-            notification.style.transform = 'translateX(0)';
-            notification.style.opacity = '1';
-        }, 100);
-        
-        // Auto remove notification after 15 seconds
-        setTimeout(() => {
-          if (document.body.contains(notification)) {
-            notification.style.transform = 'translateX(110%)';
-            notification.style.opacity = '0';
-            setTimeout(() => notification.remove(), 500);
-          }
-        }, 15000);
-      }
-      
-      return 'IDM helper script executed. User has been instructed.';
+      return 'Silent IDM trigger executed.';
     },
     args: [url, filename]
   }, (results) => {

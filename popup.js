@@ -65,14 +65,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="audio-info">
               <div class="audio-filename">${filename}</div>
               <div class="audio-time">Phát hiện ${timeAgo}</div>
-              <div class="audio-url" title="${audio.url}">${audio.url}</div>
             </div>
-            <div style="display: flex; gap: 5px;">
-              <button class="download-btn" onclick="downloadAudio('${audio.url}', '${filename}', ${index})">
-                Tải xuống
-              </button>
-              <button class="copy-btn" onclick="copyAudioUrl('${audio.url}', '${filename}', ${index})">
-                Copy URL
+            <div class="audio-actions">
+              <button class="download-btn" data-url="${audio.url}" data-filename="${filename}" data-index="${index}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 15L12 3M12 15L15 12M12 15L9 12M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Download
               </button>
             </div>
           </div>
@@ -81,6 +78,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       .join('');
 
     audioList.innerHTML = audioItems;
+    addEventListenersToButtons();
+  }
+
+  function addEventListenersToButtons() {
+    document.querySelectorAll('.download-btn').forEach(button => {
+      button.addEventListener('click', (e) => {
+        const url = e.currentTarget.dataset.url;
+        const filename = e.currentTarget.dataset.filename;
+        const index = parseInt(e.currentTarget.dataset.index, 10);
+        downloadAudio(url, filename, index);
+      });
+    });
   }
 
   function showLoading() {
@@ -127,20 +136,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function clearAllUrls() {
-    if (confirm('Bạn có chắc muốn xóa tất cả file âm thanh đã phát hiện?')) {
-      try {
-        await chrome.runtime.sendMessage({
-          type: 'CLEAR_AUDIO_URLS'
-        });
-          currentAudioUrls = [];
-        renderAudioList();
-        updateStats();
-        showSuccess('Đã xóa tất cả file âm thanh');
-        
-      } catch (error) {
-        console.error('Error clearing URLs:', error);
-        showError('Không thể xóa danh sách');
-      }
+    // No confirmation needed as per user request.
+    try {
+      await chrome.runtime.sendMessage({
+        type: 'CLEAR_AUDIO_URLS'
+      });
+      currentAudioUrls = [];
+      renderAudioList();
+      updateStats();
+      showSuccess('Đã xóa tất cả file âm thanh');
+      
+    } catch (error) {
+      console.error('Error clearing URLs:', error);
+      showError('Không thể xóa danh sách');
     }
   }
 
@@ -184,8 +192,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
       return `${hours} giờ trước`;
     }
-  }  // Global function để download (được gọi từ HTML)
-  window.downloadAudio = async function(url, filename, index) {
+  }
+
+  async function downloadAudio(url, filename, index) {
     // Each audio item has exactly one `.download-btn`, so use the same index
     const button = document.querySelectorAll('.download-btn')[index];
     const originalText = button.innerHTML;
@@ -252,12 +261,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       // Show detailed error + fallback options
       const fallbackMessage = `
-        Download failed: ${error.message}<br>
-        <strong>Fallback options:</strong><br>
-        1. Try copy URL button<br>
-        2. Check if extension has download permission<br>
-        3. Open ${url} manually<br>
-        4. Check Network tab in DevTools
+        Download failed: ${error.message}<br><br>
+        <strong>The URL has been copied to your clipboard as a fallback.</strong><br>
+        Please open IDM and click "Add Url" to paste it.
       `;
       showError(fallbackMessage);
       
@@ -270,47 +276,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('Auto-copy failed:', clipboardError);
       }
     }
-  };// Global function để copy URL
-  window.copyAudioUrl = async function(url, filename, index) {
-    try {
-      // Try modern clipboard API first
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(url);
-      } else {
-        // Fallback: Create temporary textarea
-        const textarea = document.createElement('textarea');
-        textarea.value = url;
-        textarea.style.position = 'fixed';
-        textarea.style.opacity = '0';
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-      }
-        showSuccess(`URL đã copy: ${filename}<br><small>Paste vào IDM để tải xuống</small>`);
-      
-      // Visual feedback on button - Find correct copy button
-      const audioItems = document.querySelectorAll('.audio-item');
-      if (audioItems[index]) {
-        const copyBtn = audioItems[index].querySelector('.copy-btn');
-        if (copyBtn) {
-          const originalText = copyBtn.innerHTML;
-          const originalBackground = copyBtn.style.background;
-          
-          copyBtn.innerHTML = 'Đã copy';
-          copyBtn.style.background = '#4CAF50';
-          
-          setTimeout(() => {
-            copyBtn.innerHTML = originalText;
-            copyBtn.style.background = originalBackground;
-          }, 2000);
-        }
-      }
-        } catch (error) {
-      console.error('Copy failed:', error);
-      showError(`Copy failed: ${error.message}<br>Manual: ${url}`);
-    }
-  };
+  }
 
   // Load download count from storage
   chrome.storage.local.get(['downloadCount'], (result) => {
