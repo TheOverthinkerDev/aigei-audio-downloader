@@ -1,6 +1,10 @@
-# Aigei Audio Downloader
+# 🎵 Aigei Audio Downloader
 
 Chrome extension để tự động bắt và tải file âm thanh từ trang web aigei.com.
+
+![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-green)
+![Manifest V3](https://img.shields.io/badge/Manifest-V3-blue)
+![License](https://img.shields.io/badge/License-MIT-yellow)
 
 ## ✨ Tính năng
 
@@ -14,24 +18,34 @@ Chrome extension để tự động bắt và tải file âm thanh từ trang we
 
 ## 🚀 Cài đặt nhanh
 
-1. **Download extension:**
-   ```bash
-   git clone [repository-url]
-   # hoặc download zip
-   ```
+### Option 1: Clone từ GitHub
+```bash
+git clone https://github.com/yourusername/aigei-audio-downloader.git
+cd aigei-audio-downloader
+```
 
-2. **Load vào Chrome:**
-   - Mở `chrome://extensions/`
-   - Bật "Developer mode" 
-   - Click "Load unpacked"
-   - Chọn thư mục extension
+### Option 2: Download ZIP
+1. Click **"Code"** → **"Download ZIP"** 
+2. Extract vào folder bất kỳ
 
-3. **Sử dụng:**
-   - Vào aigei.com
-   - Play preview audio
-   - Click icon extension để download
+### Load vào Chrome:
+1. Mở `chrome://extensions/`
+2. Bật **"Developer mode"** 
+3. Click **"Load unpacked"**
+4. Chọn thư mục extension
 
-📖 **Chi tiết:** Xem [INSTALL.md](INSTALL.md)
+## 📖 Hướng dẫn chi tiết
+
+- **[INSTALL.md](INSTALL.md)** - Hướng dẫn cài đặt từng bước
+- **[QUICK_FIX.md](QUICK_FIX.md)** - Sửa lỗi nhanh nếu gặp vấn đề
+- **[TESTING_DETAILED.md](TESTING_DETAILED.md)** - Test chi tiết
+
+## 🧪 Testing nhanh
+
+1. Load extension trong Chrome
+2. Mở `simple_test.html` và click **"Check Extension"**
+3. Kiểm tra popup hoạt động
+4. Test trên aigei.com thực tế
 
 ## 🎯 Cách hoạt động
 
@@ -40,88 +54,74 @@ Extension hoạt động bằng cách:
 1. **Monitor Network:** Theo dõi requests từ aigei.com
 2. **Detect Audio:** Phát hiện URLs chứa file âm thanh  
 3. **Capture & Store:** Lưu URLs vào Chrome storage
-4. **Download:** Sử dụng Chrome Downloads API
+4. **Download:** Sử dụng Chrome Downloads API hoặc fallback methods
 
-## 📁 Cấu trúc files
+## 📁 Cấu trúc project
 
 ```
 aigei-audio-downloader/
-├── manifest.json      # Cấu hình extension
-├── background.js      # Service worker bắt network requests  
-├── content.js         # Script chạy trên aigei.com
-├── popup.html         # Giao diện popup
-├── popup.js          # Logic popup
-├── icons/            # Icons cho extension
-│   ├── icon16.svg
-│   ├── icon48.svg  
-│   └── icon128.svg
-├── README.md         # Documentation chính
-├── INSTALL.md        # Hướng dẫn cài đặt chi tiết
-├── TESTING.md        # Guide test extension
-└── check_ready.ps1   # Script kiểm tra files
-```
-
-## 🧪 Testing & Debugging
-
-### Quick Test
-1. Load extension trong Chrome (xem [INSTALL.md](INSTALL.md))
-2. Mở `test_extension.html` và click "Check Extension"
-3. Kiểm tra popup hoạt động
-4. Test trên aigei.com thực tế
-
-### Detailed Testing
-- **[TESTING_DETAILED.md](TESTING_DETAILED.md)** - Hướng dẫn test chi tiết
-- **`test_extension.html`** - Test page với simulated audio
-- **`debug_full.js`** - Debug script để check extension health
-
-### Debug Commands
-```javascript
-// Trong console của bất kỳ trang nào
-debugAigeiExtension(); // Chạy full diagnostic
-
-// Trong background script console
-console.log('Extension status check');
+├── manifest.json           # Extension configuration
+├── background.js           # Service worker - network monitoring
+├── content.js             # Content script - page interaction  
+├── popup.html             # Extension popup interface
+├── popup.js               # Popup functionality
+├── simple_test.html       # Quick test page
+├── INSTALL.md             # Installation guide
+├── QUICK_FIX.md          # Troubleshooting guide
+└── TESTING_DETAILED.md   # Comprehensive testing
 ```
 
 ## ⚙️ Requirements
 
-- Chrome browser (version 88+)
-- Permissions: downloads, webRequest, activeTab, storage
-- Domain: *.aigei.com
+- **Chrome 88+** (hoặc Edge, Brave - Chromium-based browsers)
+- **Manifest V3** support
+- **Developer mode** enabled trong Extensions
 
-## 🔧 Troubleshooting
+## 🔧 Permissions
 
-**Extension không hoạt động:**
-- ✅ Kiểm tra đã enable extension
-- ✅ Refresh trang aigei.com
-- ✅ Check Console có lỗi gì không
+Extension cần các permissions sau:
+- `downloads` - Download files
+- `storage` - Lưu detected URLs  
+- `scripting` - Inject scripts when needed
+- `tabs` - Access tab information
+- `webRequest` - Monitor network requests
+- `contextMenus` - Right-click menu
+- Host permission cho `*://*.aigei.com/*`
 
-**Không bắt được audio:**
-- ✅ Đảm bảo đang ở aigei.com
-- ✅ Thử play file audio khác
-- ✅ Check Network tab trong DevTools
+## 🚨 Troubleshooting
 
-**Download fail:**
-- ✅ Check permissions Downloads
-- ✅ Thử file khác
-- ✅ Check popup có báo lỗi không
+### Extension không load?
+1. Check [QUICK_FIX.md](QUICK_FIX.md)
+2. Reload extension trong chrome://extensions/
+3. Check console errors
+
+### Download không hoạt động?
+1. Verify extension permissions
+2. Test với simple_test.html trước
+3. Check background script console
 
 ## 🤝 Contributing
 
-Feel free to:
-- Report bugs
-- Suggest features  
-- Submit pull requests
-- Improve documentation
+1. Fork repository
+2. Create feature branch: `git checkout -b feature-name`
+3. Commit changes: `git commit -m 'Add feature'`
+4. Push to branch: `git push origin feature-name`
+5. Submit pull request
 
-## 📝 License
+## 📄 License
 
-MIT License - Tự do sử dụng và chỉnh sửa.
+MIT License - see [LICENSE](LICENSE) file for details.
 
-## 👨‍💻 Tác giả
+## 🙏 Acknowledgments
 
-Được tạo bởi GitHub Copilot theo yêu cầu của người dùng.
+- Aigei.com for the audio platform
+- Chrome Extensions API documentation
+- Open source community
+
+## ⭐ Support
+
+Nếu extension hữu ích, hãy cho một ⭐ trên GitHub!
 
 ---
 
-🎵 **Happy downloading!** Chúc bạn tải được nhiều file âm thanh hay!
+**Disclaimer:** Extension này chỉ dành cho mục đích giáo dục và nghiên cứu. Hãy tôn trọng bản quyền và điều khoản sử dụng của aigei.com.
