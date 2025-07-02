@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aigei Audio Downloader</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 400px;
+      min-height: 500px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #333;
+    }
+
+    .header {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 20px;
+      text-align: center;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .header h1 {
+      font-size: 18px;
+      margin-bottom: 5px;
+      color: #333;
+    }
+
+    .header p {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .content {
+      background: white;
+      min-height: 400px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stats {
+      padding: 15px 20px;
+      background: #f8f9fa;
+      border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .stats-item {
+      text-align: center;
+    }
+
+    .stats-number {
+      font-size: 24px;
+      font-weight: bold;
+      color: #667eea;
+    }
+
+    .stats-label {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .audio-list {
+      flex: 1;
+      overflow-y: auto;
+      max-height: 300px;
+    }
+
+    .audio-item {
+      padding: 15px 20px;
+      border-bottom: 1px solid #f0f0f0;
+      transition: background-color 0.2s;
+    }
+
+    .audio-item:hover {
+      background: #f8f9fa;
+    }
+
+    .audio-info {
+      margin-bottom: 10px;
+    }
+
+    .audio-filename {
+      font-weight: 500;
+      color: #333;
+      margin-bottom: 5px;
+      word-break: break-all;
+    }
+
+    .audio-time {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .audio-url {
+      font-size: 11px;
+      color: #999;
+      font-family: monospace;
+      background: #f5f5f5;
+      padding: 5px;
+      border-radius: 3px;
+      margin: 5px 0;
+      word-break: break-all;
+      max-height: 40px;
+      overflow: hidden;
+    }    .download-btn, .copy-btn {
+      background: #333;
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      margin: 2px;
+      min-width: 70px;
+    }
+
+    .download-btn:hover, .copy-btn:hover {
+      background: #555;
+    }
+
+    .download-btn:active, .copy-btn:active {
+      background: #222;
+    }
+
+    .download-btn:disabled, .copy-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .copy-btn {
+      background: #666;
+    }
+
+    .copy-btn:hover {
+      background: #777;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #666;
+    }
+
+    .empty-icon {
+      font-size: 48px;
+      margin-bottom: 15px;
+      opacity: 0.5;
+    }
+
+    .controls {
+      padding: 15px 20px;
+      background: #f8f9fa;
+      border-top: 1px solid #e0e0e0;
+      display: flex;
+      gap: 10px;
+    }    .btn {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      background: #333;
+      color: white;
+    }
+
+    .btn:hover {
+      background: #555;
+    }
+
+    .btn-refresh {
+      background: #333;
+    }
+
+    .btn-clear {
+      background: #666;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .success-message, .error-message {
+      padding: 10px;
+      margin: 10px 20px;
+      border-radius: 5px;
+      font-size: 12px;
+    }
+
+    .success-message {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .error-message {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+  </style>
+</head>
+<body>  <div class="header">
+    <h1>Aigei Audio Downloader</h1>
+    <p>Tự động bắt và tải file âm thanh</p>
+  </div>
+
+  <div class="content">
+    <div class="stats">
+      <div class="stats-item">
+        <div class="stats-number" id="audioCount">0</div>
+        <div class="stats-label">File âm thanh</div>
+      </div>
+      <div class="stats-item">
+        <div class="stats-number" id="downloadCount">0</div>
+        <div class="stats-label">Đã tải xuống</div>
+      </div>
+    </div>
+
+    <div class="audio-list" id="audioList">
+      <div class="loading">
+        <div class="spinner"></div>
+        Đang tải...
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn btn-refresh" id="refreshBtn">
+        Làm mới
+      </button>
+      <button class="btn btn-clear" id="clearBtn">
+        Xóa tất cả
+      </button>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

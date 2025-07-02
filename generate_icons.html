@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Icon Generator</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        canvas { border: 1px solid #ccc; margin: 10px; }
+        .icon-container { display: inline-block; margin: 10px; text-align: center; }
+    </style>
+</head>
+<body>
+    <h1>Aigei Audio Downloader - Icon Generator</h1>
+    <p>Trang này sẽ tạo ra các file PNG từ SVG icon. Mở Developer Tools và chạy script trong Console.</p>
+    
+    <div class="icon-container">
+        <h3>16x16</h3>
+        <canvas id="canvas16" width="16" height="16"></canvas>
+    </div>
+    
+    <div class="icon-container">
+        <h3>48x48</h3>
+        <canvas id="canvas48" width="48" height="48"></canvas>
+    </div>
+    
+    <div class="icon-container">
+        <h3>128x128</h3>
+        <canvas id="canvas128" width="128" height="128"></canvas>
+    </div>
+
+    <script>
+        // SVG content
+        const svgContent = `
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="64" cy="64" r="58" fill="#667eea" stroke="#764ba2" stroke-width="4"/>
+  <g fill="white">
+    <rect x="78" y="25" width="4" height="50" rx="2"/>
+    <ellipse cx="72" cy="70" rx="8" ry="6"/>
+    <path d="M 35 45 Q 45 35, 35 25" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M 30 50 Q 40 40, 30 30" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M 25 55 Q 35 45, 25 35" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <g transform="translate(45, 85)">
+      <rect x="8" y="0" width="3" height="15" fill="white"/>
+      <polygon points="4.5,10 14.5,10 9.5,18" fill="white"/>
+    </g>
+  </g>
+  <text x="64" y="110" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="white">AIGEI</text>
+</svg>`;
+
+        function generateIcons() {
+            const sizes = [16, 48, 128];
+              sizes.forEach(size => {
+                const canvas = document.getElementById(`canvas${size}`);
+                const ctx = canvas.getContext('2d');
+                
+                // Create SVG image
+                const svg = new Blob([svgContent], { type: 'image/svg+xml' });
+                const url = URL.createObjectURL(svg);
+                
+                const img = new Image();
+                img.onload = function() {
+                    ctx.drawImage(img, 0, 0, size, size);
+                    URL.revokeObjectURL(url);
+                      // Download
+                    canvas.toBlob(function(blob) {
+                        const link = document.createElement('a');
+                        link.download = `icon${size}.png`;
+                        link.href = URL.createObjectURL(blob);
+                        link.click();
+                    });
+                };
+                img.src = url;
+            });
+        }
+
+        // Auto generate after 1 second
+        setTimeout(generateIcons, 1000);
+        
+        console.log("Icons will be generated automatically. Check your Downloads folder.");
+    </script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+<!-- Icon SVG cho extension -->
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="64" cy="64" r="58" fill="#667eea" stroke="#764ba2" stroke-width="4"/>
+  
+  <!-- Music note -->
+  <g fill="white">
+    <!-- Note stem -->
+    <rect x="78" y="25" width="4" height="50" rx="2"/>
+    
+    <!-- Note head -->
+    <ellipse cx="72" cy="70" rx="8" ry="6"/>
+    
+    <!-- Sound waves -->
+    <path d="M 35 45 Q 45 35, 35 25" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M 30 50 Q 40 40, 30 30" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M 25 55 Q 35 45, 25 35" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/>
+    
+    <!-- Download arrow -->
+    <g transform="translate(45, 85)">
+      <rect x="8" y="0" width="3" height="15" fill="white"/>
+      <polygon points="4.5,10 14.5,10 9.5,18" fill="white"/>
+    </g>
+  </g>
+  
+  <!-- Text -->
+  <text x="64" y="110" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="white">AIGEI</text>
+</svg>

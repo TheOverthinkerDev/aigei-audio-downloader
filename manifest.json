@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "Aigei Audio Downloader",
+  "version": "1.0",
+  "description": "Tự động bắt và tải file âm thanh từ aigei.com",
+  
+  "permissions": [
+    "activeTab",
+    "downloads",
+    "webRequest",
+    "storage",
+    "scripting",
+    "tabs",
+    "contextMenus"
+  ],
+  
+  "host_permissions": [
+    "*://*.aigei.com/*"
+  ],
+  
+  "background": {
+    "service_worker": "background.js"
+  },
+  
+  "content_scripts": [
+    {
+      "matches": ["*://*.aigei.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ],  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Aigei Audio Downloader"
+  }
+}

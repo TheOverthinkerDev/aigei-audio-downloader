@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Extension Test Page</title>
+</head>
+<body>
+    <h1>Extension Debug Test</h1>
+    
+    <button onclick="testCopyURL()">Test Copy URL</button>
+    <button onclick="testDownload()">Test Download</button>
+    <button onclick="testClipboard()">Test Clipboard</button>
+    
+    <div id="output"></div>
+    
+    <script>
+        function log(message) {
+            document.getElementById('output').innerHTML += '<p>' + message + '</p>';
+            console.log(message);
+        }
+        
+        function testCopyURL() {
+            const testUrl = 'https://s2.aigei.com/src/aud/mp3/test.mp3';
+            
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(testUrl).then(() => {
+                    log('✅ Clipboard API works: ' + testUrl);
+                }).catch((error) => {
+                    log('❌ Clipboard API failed: ' + error);
+                    testFallbackCopy(testUrl);
+                });
+            } else {
+                log('❌ Clipboard API not available');
+                testFallbackCopy(testUrl);
+            }
+        }
+        
+        function testFallbackCopy(text) {
+            try {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                const success = document.execCommand('copy');
+                document.body.removeChild(textarea);
+                
+                if (success) {
+                    log('✅ Fallback copy works: ' + text);
+                } else {
+                    log('❌ Fallback copy failed');
+                }
+            } catch (error) {
+                log('❌ Fallback copy error: ' + error);
+            }
+        }
+        
+        function testDownload() {
+            const testUrl = 'https://s2.aigei.com/src/aud/mp3/test.mp3';
+            const filename = 'test_audio.mp3';
+            
+            const link = document.createElement('a');
+            link.href = testUrl;
+            link.download = filename;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            
+            link.click();
+            
+            setTimeout(() => {
+                document.body.removeChild(link);
+                log('✅ Download link created and clicked');
+            }, 1000);
+        }
+        
+        function testClipboard() {
+            log('Testing clipboard permissions...');
+            
+            if (!navigator.clipboard) {
+                log('❌ Clipboard API not supported');
+                return;
+            }
+            
+            navigator.permissions.query({name: 'clipboard-write'}).then((result) => {
+                log('Clipboard write permission: ' + result.state);
+            }).catch((error) => {
+                log('Clipboard permission check failed: ' + error);
+            });
+        }
+        
+        // Log extension detection
+        setTimeout(() => {
+            log('Page loaded. Checking for extension...');
+            log('User agent: ' + navigator.userAgent);
+            log('Location: ' + window.location.href);
+        }, 1000);
+    </script>
+</body>
+</html>

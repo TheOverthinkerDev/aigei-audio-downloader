@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Extension Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .success { background: #d4edda; }
+        .error { background: #f8d7da; }
+        button { padding: 10px 20px; margin: 5px; background: #333; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #555; }
+    </style>
+</head>
+<body>
+    <h1>Simple Extension Test</h1>
+    
+    <div class="test">
+        <h3>1. Extension Basic Check</h3>
+        <button onclick="checkBasic()">Check Extension</button>
+        <div id="basicResult"></div>
+    </div>
+
+    <div class="test">
+        <h3>2. Test Chrome APIs</h3>
+        <button onclick="testAPIs()">Test APIs</button>
+        <div id="apiResult"></div>
+    </div>
+
+    <div class="test">
+        <h3>3. Test Popup</h3>
+        <p>Click extension icon in toolbar to test popup</p>
+    </div>
+
+    <div class="test">
+        <h3>4. Simulate Audio Detection</h3>
+        <button onclick="simulateAudio()">Simulate Audio File</button>
+        <div id="audioResult"></div>
+    </div>
+
+    <script>
+        function log(elementId, message, isError = false) {
+            const element = document.getElementById(elementId);
+            element.innerHTML += `<p>${message}</p>`;
+            element.className = isError ? 'error' : 'success';
+        }
+
+        function checkBasic() {
+            const result = document.getElementById('basicResult');
+            result.innerHTML = '';
+            
+            if (typeof chrome === 'undefined') {
+                log('basicResult', 'ERROR: Chrome APIs not available', true);
+                return;
+            }
+            
+            log('basicResult', 'Chrome APIs available');
+            
+            if (chrome.runtime && chrome.runtime.id) {
+                log('basicResult', `Extension ID: ${chrome.runtime.id}`);
+            } else {
+                log('basicResult', 'ERROR: Extension not loaded properly', true);
+            }
+        }
+
+        async function testAPIs() {
+            const result = document.getElementById('apiResult');
+            result.innerHTML = '';
+            
+            // Test storage
+            try {
+                await chrome.storage.local.set({test: 'value'});
+                const data = await chrome.storage.local.get('test');
+                if (data.test === 'value') {
+                    log('apiResult', 'Storage API: Working');
+                } else {
+                    log('apiResult', 'Storage API: Failed', true);
+                }
+                await chrome.storage.local.remove('test');
+            } catch (e) {
+                log('apiResult', `Storage API: Error - ${e.message}`, true);
+            }
+
+            // Test permissions
+            try {
+                const perms = await chrome.permissions.getAll();
+                log('apiResult', `Permissions: ${perms.permissions.join(', ')}`);
+            } catch (e) {
+                log('apiResult', `Permissions: Error - ${e.message}`, true);
+            }
+
+            // Test downloads
+            if (chrome.downloads) {
+                log('apiResult', 'Downloads API: Available');
+            } else {
+                log('apiResult', 'Downloads API: Not available', true);
+            }
+        }
+
+        function simulateAudio() {
+            const result = document.getElementById('audioResult');
+            result.innerHTML = '';
+            
+            // Create audio element
+            const audio = document.createElement('audio');
+            audio.src = 'https://example.com/test-audio.mp3';
+            audio.style.display = 'none';
+            document.body.appendChild(audio);
+            
+            log('audioResult', 'Audio element created for testing');
+            
+            // Send message to extension
+            if (chrome.runtime) {
+                chrome.runtime.sendMessage({
+                    type: 'TEST_AUDIO_DETECTED',
+                    url: 'https://example.com/test-audio.mp3'
+                }).then(response => {
+                    log('audioResult', 'Message sent to extension');
+                }).catch(error => {
+                    log('audioResult', `Message failed: ${error.message}`, true);
+                });
+            }
+            
+            setTimeout(() => {
+                document.body.removeChild(audio);
+                log('audioResult', 'Test audio element removed');
+            }, 2000);
+        }
+
+        // Auto check on load
+        window.onload = () => {
+            checkBasic();
+        };
+    </script>
+</body>
+</html>
