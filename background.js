@@ -104,7 +104,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 });
 
 // Xử lý download với multiple methods
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   console.log('Background received message:', message.type, message);
   
   if (message.type === 'DOWNLOAD_AUDIO') {
@@ -114,63 +114,54 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const finalFilename = filename || generateFilename(url);
     
     console.log('Attempting download:', { url, finalFilename, tabId, sender });
-    
-    // Method 1: Chrome Downloads API
-    chrome.downloads.download({
-      url: url,
-      filename: finalFilename,
-      saveAs: false, // Thay đổi thành false để tự động download
-      conflictAction: 'uniquify'
-    }, (downloadId) => {
-      if (chrome.runtime.lastError) {
-        console.error('Chrome download failed:', chrome.runtime.lastError);
-        
-        // Method 2: Fallback - Open in new tab (IDM có thể bắt được)
-        console.log('Trying new tab method...');
-        chrome.tabs.create({
-          url: url,
-          active: false
-        }, (tab) => {
-          if (chrome.runtime.lastError) {
-            console.error('Tab creation failed:', chrome.runtime.lastError);
-            
-            // Method 3: Inject download script vào tab
-            console.log('Trying script injection method...');
-            const targetTabId = tabId || (sender.tab && sender.tab.id);
-            if (targetTabId) {
-              injectDownloadScript(url, finalFilename, targetTabId, sendResponse);
-            } else {
-              console.error('No tab ID available for script injection');
-              sendResponse({ success: false, error: 'No tab context available for script injection' });
-            }
-          } else {
-            console.log('New tab created for IDM capture:', tab.id);
-            // Đóng tab sau 5 giây
-            setTimeout(() => {
-              chrome.tabs.remove(tab.id).catch(console.error);
-            }, 5000);
-            sendResponse({ success: true, method: 'new_tab', tabId: tab.id });
-          }
-        });
-      } else {
-        console.log('Chrome download started successfully:', downloadId);
-        sendResponse({ success: true, method: 'chrome_download', downloadId: downloadId });
+
+    try {
+      const downloadId = await chrome.downloads.download({
+        url,
+        filename: finalFilename,
+        saveAs: false,
+        conflictAction: 'uniquify'
+      });
+      console.log('Chrome download started successfully:', downloadId);
+      sendResponse({ success: true, method: 'chrome_download', downloadId });
+    } catch (downloadError) {
+      console.error('Chrome download failed:', downloadError);
+      try {
+        const tab = await chrome.tabs.create({ url, active: false });
+        console.log('New tab created for IDM capture:', tab.id);
+        setTimeout(() => {
+          chrome.tabs.remove(tab.id).catch(console.error);
+        }, 5000);
+        sendResponse({ success: true, method: 'new_tab', tabId: tab.id });
+      } catch (tabError) {
+        console.error('Tab creation failed:', tabError);
+        const targetTabId = tabId || (sender.tab && sender.tab.id);
+        if (targetTabId) {
+          injectDownloadScript(url, finalFilename, targetTabId, sendResponse);
+        } else {
+          console.error('No tab ID available for script injection');
+          sendResponse({ success: false, error: 'No tab context available for script injection' });
+        }
       }
-    });
+    }
     
     return true; // Giữ message channel mở cho async response
   }
   
   if (message.type === 'GET_AUDIO_URLS') {
-    chrome.storage.local.get(['audioUrls'], (result) => {
+    try {
+      const result = await chrome.storage.local.get(['audioUrls']);
       sendResponse({ audioUrls: result.audioUrls || [] });
-    });
+    } catch (e) {
+      console.error('Error getting audio URLs:', e);
+      sendResponse({ audioUrls: [] });
+    }
     return true;
   }
   
   if (message.type === 'CLEAR_AUDIO_URLS') {
     audioUrls = [];
-    chrome.storage.local.set({ 'audioUrls': [] });
+    await chrome.storage.local.set({ 'audioUrls': [] });
     sendResponse({ success: true });
   }
 });
