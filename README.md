@@ -9,12 +9,15 @@ Chrome extension để tự động bắt và tải file âm thanh từ trang we
 ## ✨ Tính năng
 
 - 🎵 **Tự động phát hiện:** Bắt file âm thanh khi preview trên aigei.com
-- 📥 **Tải xuống dễ dàng:** Download với 1 click 
+- 📥 **IDM Integration:** Tích hợp với Internet Download Manager để tải xuống
+- 📋 **Copy URL:** Copy URL để paste vào IDM thủ công
 - 📊 **Thống kê:** Theo dõi số file đã phát hiện và tải xuống
 - 🔄 **Tự động cập nhật:** Làm mới danh sách real-time
 - 🗑️ **Quản lý:** Xóa lịch sử file đã phát hiện
 - 🎯 **Chính xác:** Hỗ trợ nhiều định dạng audio (.mp3, .wav, .m4a, .flac, .aac)
 - ⚡ **Nhanh chóng:** Không ảnh hưởng tốc độ browse web
+
+> **Lưu ý:** Extension tập trung vào IDM do Chrome gặp lỗi 403 khi download trực tiếp từ aigei.com
 
 ## 🚀 Cài đặt nhanh
 
@@ -43,9 +46,9 @@ cd aigei-audio-downloader
 ## 🧪 Testing nhanh
 
 1. Load extension trong Chrome
-2. Mở `simple_test.html` và click **"Check Extension"**
-3. Kiểm tra popup hoạt động
-4. Test trên aigei.com thực tế
+2. Kiểm tra popup hoạt động
+3. Test trên aigei.com thực tế
+4. Đảm bảo IDM đã cài đặt để test download
 
 ## 🎯 Cách hoạt động
 
@@ -54,7 +57,12 @@ Extension hoạt động bằng cách:
 1. **Monitor Network:** Theo dõi requests từ aigei.com
 2. **Detect Audio:** Phát hiện URLs chứa file âm thanh  
 3. **Capture & Store:** Lưu URLs vào Chrome storage
-4. **Download:** Sử dụng Chrome Downloads API hoặc fallback methods
+4. **IDM Integration:** 
+   - Mở tab mới để IDM tự động bắt URL
+   - Copy URL vào clipboard cho IDM
+   - Hiển thị hướng dẫn sử dụng IDM
+
+> **Tại sao cần IDM?** Chrome gặp lỗi 403 khi download trực tiếp từ aigei.com, IDM giải quyết vấn đề này.
 
 ## 📁 Cấu trúc project
 
@@ -65,7 +73,6 @@ aigei-audio-downloader/
 ├── content.js             # Content script - page interaction  
 ├── popup.html             # Extension popup interface
 ├── popup.js               # Popup functionality
-├── simple_test.html       # Quick test page
 ├── INSTALL.md             # Installation guide
 ├── QUICK_FIX.md          # Troubleshooting guide
 └── TESTING_DETAILED.md   # Comprehensive testing
@@ -97,7 +104,7 @@ Extension cần các permissions sau:
 
 ### Download không hoạt động?
 1. Verify extension permissions
-2. Test với simple_test.html trước
+2. Kiểm tra IDM đã cài đặt chưa
 3. Check background script console
 
 ## 🤝 Contributing

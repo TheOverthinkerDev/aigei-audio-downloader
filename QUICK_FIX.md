@@ -55,18 +55,19 @@ If reload doesn't work:
 ## 🧪 Quick Test Steps
 
 ### Test 1: Basic Extension
-1. Open `simple_test.html` in Chrome
-2. Click "Check Extension" button
-3. Should show "Extension ID: [some-id]"
+1. Open extension popup by clicking icon in toolbar
+2. Should show "Aigei Audio Downloader" interface
+3. Should display current stats (0 files detected initially)
 
-### Test 2: APIs Working  
-1. Click "Test APIs" button
-2. Should show "Storage API: Working" and list permissions
+### Test 2: IDM Integration Test  
+1. Go to aigei.com and try to play an audio file
+2. Extension should detect and list the audio URLs
+3. Click "Tải xuống" button to test IDM integration
 
-### Test 3: Popup Works
-1. Click extension icon in Chrome toolbar
-2. Popup should open showing "Aigei Audio Downloader"
-3. Should show "Chưa có file âm thanh nào được phát hiện"
+### Test 3: Manual Copy Test
+1. Click "Copy URL" button on any detected audio
+2. Open IDM manually and paste URL to verify it works
+3. Should successfully start download in IDM
 
 ### Test 4: Audio Detection
 1. Go to aigei.com
@@ -108,10 +109,11 @@ If reload doesn't work:
 
 Extension working properly when:
 - ✅ Extension appears in chrome://extensions/ with no errors
-- ✅ simple_test.html shows Extension ID
+- ✅ Extension popup opens correctly
 - ✅ Popup opens from toolbar icon
 - ✅ No console errors in popup or background script
 - ✅ Can detect audio URLs on aigei.com
+- ✅ IDM integration works (new tab opens or clipboard copy successful)
 
 ## 📞 Still Not Working?
 

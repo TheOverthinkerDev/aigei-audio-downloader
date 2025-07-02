@@ -103,7 +103,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   }
 });
 
-// Xử lý download với multiple methods
+// Xử lý download - Tập trung vào IDM integration
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   console.log('Background received message:', message.type, message);
   
@@ -113,35 +113,29 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
     // Tạo tên file nếu không có
     const finalFilename = filename || generateFilename(url);
     
-    console.log('Attempting download:', { url, finalFilename, tabId, sender });
+    console.log('Sending to IDM:', { url, finalFilename, tabId });
 
     try {
-      const downloadId = await chrome.downloads.download({
-        url,
-        filename: finalFilename,
-        saveAs: false,
-        conflictAction: 'uniquify'
-      });
-      console.log('Chrome download started successfully:', downloadId);
-      sendResponse({ success: true, method: 'chrome_download', downloadId });
-    } catch (downloadError) {
-      console.error('Chrome download failed:', downloadError);
-      try {
-        const tab = await chrome.tabs.create({ url, active: false });
-        console.log('New tab created for IDM capture:', tab.id);
-        setTimeout(() => {
-          chrome.tabs.remove(tab.id).catch(console.error);
-        }, 5000);
-        sendResponse({ success: true, method: 'new_tab', tabId: tab.id });
-      } catch (tabError) {
-        console.error('Tab creation failed:', tabError);
-        const targetTabId = tabId || (sender.tab && sender.tab.id);
-        if (targetTabId) {
-          injectDownloadScript(url, finalFilename, targetTabId, sendResponse);
-        } else {
-          console.error('No tab ID available for script injection');
-          sendResponse({ success: false, error: 'No tab context available for script injection' });
-        }
+      // Method 1: Mở tab mới để IDM tự động bắt URL
+      const tab = await chrome.tabs.create({ url, active: false });
+      console.log('New tab created for IDM capture:', tab.id);
+      
+      // Đóng tab sau 3 giây để IDM có thời gian bắt URL
+      setTimeout(() => {
+        chrome.tabs.remove(tab.id).catch(console.error);
+      }, 3000);
+      
+      sendResponse({ success: true, method: 'idm_new_tab', tabId: tab.id });
+      
+    } catch (tabError) {
+      console.error('Tab creation failed, trying script injection:', tabError);
+      
+      // Method 2: Inject script để copy URL cho IDM
+      const targetTabId = tabId || (sender.tab && sender.tab.id);
+      if (targetTabId) {
+        injectIDMScript(url, finalFilename, targetTabId, sendResponse);
+      } else {
+        sendResponse({ success: false, error: 'No tab available for IDM integration' });
       }
     }
     
@@ -215,70 +209,99 @@ setInterval(() => {
   chrome.storage.local.set({ 'audioUrls': audioUrls });
 }, 10 * 60 * 1000); // Chạy mỗi 10 phút
 
-// Function inject download script vào tab
-function injectDownloadScript(url, filename, tabId, sendResponse) {
+// Function inject IDM script vào tab
+function injectIDMScript(url, filename, tabId, sendResponse) {
   chrome.scripting.executeScript({
     target: { tabId: tabId },
     func: function(downloadUrl, downloadFilename) {
-      console.log('Injecting download script for:', downloadUrl);
+      console.log('Injecting IDM script for:', downloadUrl);
       
-      // Method 1: Create download link
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = downloadFilename;
-      link.style.display = 'none';
-      
-      // Safely append to body
-      if (document.body) {
-        document.body.appendChild(link);
-        
-        // Trigger download
-        link.click();
-        
-        // Clean up
-        setTimeout(() => {
-          if (document.body.contains(link)) {
-            document.body.removeChild(link);
-          }
-        }, 1000);
-      }
-      
-      // Method 2: Copy to clipboard
+      // Method 1: Copy URL to clipboard for IDM
       if (navigator.clipboard) {
         navigator.clipboard.writeText(downloadUrl).then(() => {
-          console.log('URL copied to clipboard');
+          console.log('URL copied to clipboard for IDM');
         }).catch((error) => {
           console.log('Clipboard copy failed:', error);
         });
       }
       
-      // Method 3: Show notification to user
+      // Method 2: Show IDM instruction notification
       const notification = document.createElement('div');
-      notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #4CAF50; color: white; padding: 15px; border-radius: 8px; z-index: 99999; font-family: Arial; max-width: 300px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);';
+      notification.style.cssText = `
+        position: fixed; top: 20px; right: 20px; 
+        background: #2196F3; color: white; 
+        padding: 20px; border-radius: 12px; 
+        z-index: 99999; font-family: Arial; 
+        max-width: 350px; 
+        box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        border: 2px solid #1976D2;
+      `;
       
-      notification.innerHTML = '<strong>🎵 Audio Download</strong><br>File: ' + downloadFilename + '<br><small>URL copied to clipboard. Use IDM or paste in browser.</small><button onclick="this.parentElement.remove()" style="float: right; background: none; border: none; color: white; cursor: pointer; font-size: 16px; margin-left: 10px;">×</button>';
+      notification.innerHTML = `
+        <div style="font-size: 16px; font-weight: bold; margin-bottom: 10px;">
+          🎵 Aigei Audio Ready for IDM
+        </div>
+        <div style="margin-bottom: 10px;">
+          <strong>File:</strong> ${downloadFilename}
+        </div>
+        <div style="margin-bottom: 15px; font-size: 14px;">
+          <strong>URL copied to clipboard!</strong><br>
+          Open IDM and paste (Ctrl+V) to start download.
+        </div>
+        <div style="font-size: 12px; opacity: 0.9; margin-bottom: 10px;">
+          If IDM doesn't auto-detect, use:<br>
+          "Downloads" → "Add URL" → Paste
+        </div>
+        <button onclick="this.parentElement.remove()" 
+                style="float: right; background: rgba(255,255,255,0.2); 
+                       border: 1px solid rgba(255,255,255,0.3); 
+                       color: white; cursor: pointer; 
+                       padding: 5px 10px; border-radius: 4px;">
+          ✓ Got it
+        </button>
+        <div style="clear: both;"></div>
+      `;
       
       if (document.body) {
         document.body.appendChild(notification);
         
-        // Auto remove notification
+        // Auto remove notification after 15 seconds
         setTimeout(() => {
           if (document.body.contains(notification)) {
             notification.remove();
           }
-        }, 10000);
+        }, 15000);
       }
       
-      return 'Download script executed successfully';
+      // Method 3: Try to trigger IDM detection with invisible link
+      const hiddenLink = document.createElement('a');
+      hiddenLink.href = downloadUrl;
+      hiddenLink.download = downloadFilename;
+      hiddenLink.style.display = 'none';
+      
+      if (document.body) {
+        document.body.appendChild(hiddenLink);
+        // Click to trigger any download managers
+        hiddenLink.click();
+        
+        // Clean up
+        setTimeout(() => {
+          if (document.body.contains(hiddenLink)) {
+            document.body.removeChild(hiddenLink);
+          }
+        }, 2000);
+      }
+      
+      return 'IDM script executed successfully';
     },
     args: [url, filename]
   }, (results) => {
     if (chrome.runtime.lastError) {
-      console.error('Script injection failed:', chrome.runtime.lastError);
-      sendResponse({ success: false, error: 'Script injection failed', lastError: chrome.runtime.lastError.message });
+      console.error('IDM script injection failed:', chrome.runtime.lastError);
+      sendResponse({ success: false, error: 'IDM script injection failed', lastError: chrome.runtime.lastError.message });
     } else {
-      console.log('Download script injected successfully');
-      sendResponse({ success: true, method: 'script_injection', results: results });
+      console.log('IDM script injected successfully');
+      sendResponse({ success: true, method: 'idm_script_injection', results: results });
     }
   });
 }

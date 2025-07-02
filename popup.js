@@ -215,11 +215,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       if (response && response.success) {        let successMessage = '';
         switch (response.method) {
-          case 'chrome_download':
-            button.innerHTML = 'Đã tải';
-            button.style.background = '#4CAF50';
-            successMessage = `Đã tải xuống: ${filename}`;
-            break;
           case 'new_tab':
             button.innerHTML = 'Tab mới';
             button.style.background = '#2196F3';
@@ -228,12 +223,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           case 'script_injection':
             button.innerHTML = 'Đã copy';
             button.style.background = '#FF9800';
-            successMessage = `URL đã copy: ${filename}`;
+            successMessage = `URL đã copy cho IDM: ${filename}`;
             break;
           default:
             button.innerHTML = 'Xong';
             button.style.background = '#4CAF50';
-            successMessage = `Đã xử lý: ${filename}`;
+            successMessage = `Đã xử lý cho IDM: ${filename}`;
         }
         
         downloads++;
