@@ -37,12 +37,15 @@ chrome.webRequest.onBeforeRequest.addListener(
         });
         
         // Gửi thông báo đến popup nếu đang mở
-        chrome.runtime.sendMessage({
-          type: 'NEW_AUDIO_URL',
-          data: audioData
-        }).catch(() => {
-          // Popup có thể chưa mở, bỏ qua lỗi
-        });
+        chrome.runtime.sendMessage(
+          { type: 'NEW_AUDIO_URL', data: audioData },
+          () => {
+            // Popup có thể chưa mở, ignore error
+            if (chrome.runtime.lastError) {
+              console.debug('Popup chưa mở:', chrome.runtime.lastError.message);
+            }
+          }
+        );
         
         console.log('Đã lưu audio URL:', audioData.filename);
       }
@@ -147,7 +150,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             console.log('New tab created for IDM capture:', tab.id);
             // Đóng tab sau 5 giây
             setTimeout(() => {
-              chrome.tabs.remove(tab.id).catch(console.error);
+              chrome.tabs.remove(tab.id, () => {
+                if (chrome.runtime.lastError) {
+                  console.error('Tab removal failed:', chrome.runtime.lastError);
+                }
+              });
             }, 5000);
             sendResponse({ success: true, method: 'new_tab', tabId: tab.id });
           }

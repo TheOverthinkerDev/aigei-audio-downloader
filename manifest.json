@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Aigei Audio Downloader",
-  "version": "1.0",
+  "version": "1.1",
   "description": "Tự động bắt và tải file âm thanh từ aigei.com",
   
   "permissions": [
