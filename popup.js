@@ -186,7 +186,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }  // Global function để download (được gọi từ HTML)
   window.downloadAudio = async function(url, filename, index) {
-    const button = document.querySelectorAll('.download-btn')[index * 2]; // First button is download
+    // Each audio item has exactly one `.download-btn`, so use the same index
+    const button = document.querySelectorAll('.download-btn')[index];
     const originalText = button.innerHTML;
     
     console.log('Download clicked:', { url, filename, index });
