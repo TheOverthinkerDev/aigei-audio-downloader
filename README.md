@@ -20,7 +20,7 @@ Chrome extension để tự động bắt và tải file âm thanh từ trang we
 
 ### Option 1: Clone từ GitHub
 ```bash
-git clone https://github.com/yourusername/aigei-audio-downloader.git
+git clone https://github.com/TheOverthinkerDev/aigei-audio-downloader.git
 cd aigei-audio-downloader
 ```
 
