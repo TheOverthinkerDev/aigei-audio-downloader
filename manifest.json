@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "Aigei Sound Downloader",
+  "version": "1.0",
+  "description": "Download audio files from aigei.com",
+  "permissions": [
+    "downloads",
+    "storage",
+    "declarativeNetRequestWithHostAccess",
+    "notifications",
+    "webRequest"
+  ],
+  "host_permissions": [
+    "*://*.aigei.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.aigei.com/*"
+      ],
+      "js": [
+        "content.js"
+      ]
+    }
+  ],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "ruleset_1",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  }
+}

@@ -1,0 +1,25 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        {
+          "header": "Referer",
+          "operation": "set",
+          "value": "https://www.aigei.com/"
+        },
+        {
+          "header": "User-Agent",
+          "operation": "set",
+          "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36"
+        }
+      ]
+    },
+    "condition": {
+      "regexFilter": "^https://s[12]\\.aigei\\.com/(pvaud|src)/aud/mp3/.*",
+      "resourceTypes": ["main_frame", "sub_frame", "xmlhttprequest", "media", "object", "other"]
+    }
+  }
+]
