@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Aigei Sound Downloader",
-  "version": "1.0",
+  "version": "3.0",
   "description": "Download audio files from aigei.com",
   "permissions": [
     "downloads",
