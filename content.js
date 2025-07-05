@@ -111,7 +111,9 @@ function addDownloadButton(box) {
   if (playButton) {
     playButton.addEventListener('click', () => {
       console.log('Play button clicked for unitKey:', unitKey);
-      chrome.storage.local.set({ 'lastClickedUnitKey': unitKey });
+      // No longer setting lastClickedUnitKey to avoid race conditions.
+      // The background script will now send a generic 'urlCaptured' message,
+      // and we'll find the button in the 'finding' state.
 
       // Set button to "finding url" state (yellow and long)
       const downloadButton = document.getElementById(`download-btn-${unitKey}`);
@@ -162,28 +164,42 @@ document.addEventListener('visibilitychange', () => {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log(`[content] Received message: ${request.action}`);
 
-  // Find the corresponding audio box and button
+  if (request.action === 'urlCaptured') {
+    // The background script no longer knows the unitKey, so we find the button
+    // that is currently in the "finding" state. This is more robust.
+    const downloadButton = document.querySelector('button[data-state="finding"]');
+    if (downloadButton) {
+        const unitKey = downloadButton.id.replace('download-btn-', '');
+        console.log(`[content] URL captured for ${unitKey}, enabling button.`);
+        
+        // Store the URL against the correct unitKey
+        chrome.storage.local.set({ [unitKey]: request.url });
+
+        downloadButton.setAttribute('data-state', 'ready');
+        downloadButton.style.backgroundColor = '#28a745'; // Green for ready
+        downloadButton.style.color = '#ffffff';
+        downloadButton.textContent = '⬇️';
+        downloadButton.title = 'Click to download';
+        downloadButton.disabled = false;
+        
+        // Make it round again
+        downloadButton.style.width = '40px';
+        downloadButton.style.padding = '0';
+        downloadButton.style.borderRadius = '50%';
+    } else {
+        console.warn('[content] Received a urlCaptured message, but no button was in the "finding" state.');
+    }
+    return; // End processing for this message type
+  }
+
+  // For other messages, we still expect a unitKey
   const downloadButton = document.getElementById(`download-btn-${request.unitKey}`);
   if (!downloadButton) {
       console.error(`[content] Could not find button with unitKey: ${request.unitKey}`);
       return;
   }
 
-  if (request.action === 'urlCaptured') {
-    console.log(`[content] URL captured for ${request.unitKey}, enabling button.`);
-    downloadButton.setAttribute('data-state', 'ready');
-    downloadButton.style.backgroundColor = '#28a745'; // Green for ready
-    downloadButton.style.color = '#ffffff';
-    downloadButton.textContent = '⬇️';
-    downloadButton.title = 'Click to download';
-    downloadButton.disabled = false;
-    
-    // Make it round again
-    downloadButton.style.width = '40px';
-    downloadButton.style.padding = '0';
-    downloadButton.style.borderRadius = '50%';
-
-  } else if (request.action === 'downloadReady') {
+  if (request.action === 'downloadReady') {
     console.log(`[content] Download is ready for ${request.filename}`);
     
     // Create a hidden link with the blob URL and click it

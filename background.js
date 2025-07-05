@@ -4,22 +4,14 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
     console.log('Request URL:', url);
     if (url.includes("s1.aigei.com/src/aud/mp3") || url.includes("s2.aigei.com/src/aud/mp3") || url.includes("s2.aigei.com/pvaud/aud/mp3")) {
       console.log('Captured audio URL:', url);
-      chrome.storage.local.get(['lastClickedUnitKey'], function(result) {
-        if (result.lastClickedUnitKey) {
-          console.log('Storing URL for unitKey:', result.lastClickedUnitKey);
-          let data = {};
-          data[result.lastClickedUnitKey] = url;
-          chrome.storage.local.set(data, () => {
-            // After storing, notify the content script to enable the button
-            if (details.tabId >= 0) {
-              chrome.tabs.sendMessage(details.tabId, {
-                action: 'urlCaptured',
-                unitKey: result.lastClickedUnitKey
-              });
-            }
-          });
-        }
-      });
+      // No longer using lastClickedUnitKey - just send the URL to content script
+      // The content script will find the button in "finding" state and associate the URL
+      if (details.tabId >= 0) {
+        chrome.tabs.sendMessage(details.tabId, {
+          action: 'urlCaptured',
+          url: url
+        });
+      }
     }
   },
   { urls: ["*://*.aigei.com/*"] },
