@@ -15,13 +15,6 @@ This Chrome extension helps users download audio files from the Aigei website. I
 3. Click the download button that appears.
 4. The audio file will be downloaded to your device.
 
-## Changelog
 
-### v3.0.0
-- **Codebase Refactor**: Complete rewrite of the extension for improved performance and maintainability.
-- **Direct Browser Downloads**: Added support for downloading files directly via the browser.
-- **Smart Download Button**: The download button is now added more intelligently to audio elements.
-- **Improved File Recognition**: Enhanced logic for more accurate file identification.
 
---
 Have fun downloading your favorite audio files from Aigei! If you encounter any issues or have suggestions, feel free to open an issue on the GitHub repository.
