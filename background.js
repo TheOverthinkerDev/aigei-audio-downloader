@@ -11,10 +11,12 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
           data[result.lastClickedUnitKey] = url;
           chrome.storage.local.set(data, () => {
             // After storing, notify the content script to enable the button
-            chrome.tabs.sendMessage(details.tabId, {
-              action: 'urlCaptured',
-              unitKey: result.lastClickedUnitKey
-            });
+            if (details.tabId >= 0) {
+              chrome.tabs.sendMessage(details.tabId, {
+                action: 'urlCaptured',
+                unitKey: result.lastClickedUnitKey
+              });
+            }
           });
         }
       });
