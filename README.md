@@ -8,10 +8,10 @@ This Chrome extension helps users download audio files from the Aigei website. I
 
 ## How it Works
 1. The extension injects a content script into the Aigei website.
-2. The content script scans the page for audio items and checks unitkey for each item.
-3. If the unitkey is found, a download button is created and appended to the audio item.
-4. When the play button is clicked, the extension fetches the audio file using the unitkey.
-5. The audio file is named using the unitkey and the current timestamp to ensure uniqueness.
+2. The content script scans the page for audio items and checks `unitkey` for each item.
+3. If the `unitkey` is found, a download button is created and appended to the audio item.
+4. When the play button is clicked, the extension fetches the audio file using the `unitkey`.
+5. The audio file is named using the `unitkey` and the current timestamp to ensure uniqueness.
 
 ## Instructions
 1. Install the Chrome extension.
