@@ -261,11 +261,29 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     downloadButton.style.backgroundColor = '#28a745'; // Green
     downloadButton.disabled = false;
     downloadButton.style.width = '32px';
+    downloadButton.style.padding = '0';
+    downloadButton.style.borderRadius = '16px';
 
     const icon = downloadButton.querySelector('div');
+    const label = downloadButton.querySelector('span');
     icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="white" style="width: 24px; height: 24px;">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
     </svg>`;
+    label.textContent = '';
+
+    // Collapse the button back to its icon form after a delay
+    setTimeout(() => {
+        if (downloadButton.getAttribute('data-state') === 'ready') { // only collapse if it has not been changed by user action
+            downloadButton.style.width = '32px';
+            downloadButton.style.padding = '0';
+            icon.style.display = 'flex';
+            label.textContent = 'Ready to download'; // Reset for next time
+            downloadButton.style.justifyContent = 'initial'; // Reset alignment
+            icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="white" style="width: 24px; height: 24px;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+            </svg>`;
+        }
+    }, 2000);
 
   } else if (request.action === 'downloadFailed') {
     console.error(`[content] Download failed for ${request.filename}:`, request.error);
