@@ -130,6 +130,13 @@ function addDownloadButton(box) {
               url: result[unitKey],
               filename: title.includes('.') ? title : `${title}.mp3`,
               unitKey: unitKey
+            }).catch(error => {
+              console.error('Failed to send message to background script:', error);
+              alert('An error occurred. Could not communicate with the extension background. Please try refreshing the page or re-installing the extension.');
+              // Optionally reset the button state
+              button.setAttribute('data-state', 'ready');
+              button.style.backgroundColor = '#28a745';
+              button.disabled = false;
             });
           } else {
             alert('URL not found. Please try playing the audio again.');
