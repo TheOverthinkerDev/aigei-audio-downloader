@@ -27,7 +27,7 @@ This Chrome extension helps users download audio files from the Aigei website. I
 ## Issues
 - Sometimes the download button may not appear immediately. If this happens, try refreshing the page.
 - Some download requests just have name without .mp3 extension, so you may need to manually add `.mp3` to the file name after downloading. (rare)
-- If you click the audio wave extension download button will not work, if you accidentally click it, you need to refresh the page to reset the download button, don't try to click it again, it will get error and not work until you refresh the page. (will fix it in future)
+- If you click the audio wave, download button will not work, if you accidentally click it, you need to refresh the page to reset the download button, don't try to click it again, it will get error and not work until you refresh the page. (will fix it in future)
 - refresh the page if you encounter any issues with the download button not appearing or functioning correctly. (fix 99% of the time)
 
 `Have fun downloading your favorite audio files from Aigei! If you encounter any issues or have suggestions, feel free to open an issue on the GitHub repository.`
