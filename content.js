@@ -206,6 +206,76 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
+// === Canvas Locator & Highlighter ===
+(function () {
+    'use strict';
+
+    // Inject highlight style
+    const style = document.createElement('style');
+    style.textContent = `
+      .highlight-canvas-box {
+        outline: 3px dashed blue !important;
+        transition: outline 0.2s ease;
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Helper to attach click handler to a canvas
+    function attachCanvasClickHandler(canvas) {
+        if (canvas._canvasClickHandlerAttached) return;
+        canvas.addEventListener('click', () => {
+            const itemBox = canvas.closest('.audio-item-box');
+            if (itemBox) {
+                itemBox.classList.toggle('highlight-canvas-box');
+                const unitKey = itemBox.getAttribute('unitkey') ||
+                                itemBox.querySelector('[unitkey]')?.getAttribute('unitkey');
+                console.log('🖌 Canvas clicked, unitkey:', unitKey);
+
+                // Try to find the download button for this unitKey
+                const downloadButton = document.getElementById(`download-btn-${unitKey}`);
+                if (downloadButton && downloadButton.getAttribute('data-state') === 'inactive') {
+                    // Set button to "finding url" state (yellow and long)
+                    downloadButton.setAttribute('data-state', 'finding');
+                    downloadButton.style.backgroundColor = '#ffc107'; // Yellow
+                    downloadButton.style.width = '160px'; // Keep expanded
+                    downloadButton.style.opacity = '1'; // Make it fully visible
+                    const icon = downloadButton.querySelector('div');
+                    const label = downloadButton.querySelector('span');
+                    icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="white" style="width: 24px; height: 24px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>`;
+                    label.textContent = 'Finding url';
+
+                    // Trigger background to capture url (simulate play button click logic)
+                    chrome.runtime.sendMessage({ action: 'triggerUrlCapture', unitKey });
+                }
+            } else {
+                console.warn('Canvas clicked but no .audio-item-box ancestor found.');
+            }
+        });
+        canvas._canvasClickHandlerAttached = true;
+    }
+
+    // Attach to all existing canvases immediately
+    document.querySelectorAll('.audio-wave-player canvas').forEach(attachCanvasClickHandler);
+
+    // Observe for dynamically added canvases
+    const canvasObserver = new MutationObserver((mutations) => {
+        mutations.forEach(mutation => {
+            mutation.addedNodes.forEach(node => {
+                if (node.nodeType === 1) {
+                    if (node.matches && node.matches('.audio-wave-player canvas')) {
+                        attachCanvasClickHandler(node);
+                    }
+                    if (node.querySelectorAll) {
+                        node.querySelectorAll('.audio-wave-player canvas').forEach(attachCanvasClickHandler);
+                    }
+                }
+            });
+        });
+    });
+    canvasObserver.observe(document.body, { childList: true, subtree: true });
+})();
 // Listen for messages from the background script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log(`[content] Received message: ${request.action}`);
