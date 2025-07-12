@@ -226,10 +226,8 @@ document.addEventListener('visibilitychange', () => {
         canvas.addEventListener('click', () => {
             const itemBox = canvas.closest('.audio-item-box');
             if (itemBox) {
-                itemBox.classList.toggle('highlight-canvas-box');
                 const unitKey = itemBox.getAttribute('unitkey') ||
                                 itemBox.querySelector('[unitkey]')?.getAttribute('unitkey');
-                console.log('🖌 Canvas clicked, unitkey:', unitKey);
 
                 // Try to find the download button for this unitKey
                 const downloadButton = document.getElementById(`download-btn-${unitKey}`);
@@ -249,8 +247,6 @@ document.addEventListener('visibilitychange', () => {
                     // Trigger background to capture url (simulate play button click logic)
                     chrome.runtime.sendMessage({ action: 'triggerUrlCapture', unitKey });
                 }
-            } else {
-                console.warn('Canvas clicked but no .audio-item-box ancestor found.');
             }
         });
         canvas._canvasClickHandlerAttached = true;
