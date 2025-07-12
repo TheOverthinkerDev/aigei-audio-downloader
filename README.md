@@ -7,7 +7,7 @@
 
 # Aigei Sound Downloader
 
-This Chrome extension helps users download audio files from the Aigei website. It adds a download button to each audio item, no need QQ account.
+This Chrome extension helps users download audio files from the Aigei.com. It adds a download button to each audio item, no need QQ account.
 
 ## Features
 - **Dynamic Download Button**: A button appears on each audio item.
