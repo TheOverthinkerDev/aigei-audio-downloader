@@ -131,7 +131,7 @@ function addDownloadButton(box) {
               filename: title.includes('.') ? title : `${title}.mp3`,
               unitKey: unitKey
             }).catch(error => {
-              console.error('Failed to send message to background script:', error);
+              // console.error('Failed to send message to background script:', error);
               alert('An error occurred. Could not communicate with the extension background. Please try refreshing the page or re-installing the extension.');
               // Optionally reset the button state
               button.setAttribute('data-state', 'ready');
@@ -152,7 +152,7 @@ function addDownloadButton(box) {
   const playButton = box.querySelector('.audio-player-btn');
   if (playButton) {
     playButton.addEventListener('click', () => {
-      console.log('Play button clicked for unitKey:', unitKey);
+      // console.log('Play button clicked for unitKey:', unitKey);
       // No longer setting lastClickedUnitKey to avoid race conditions.
       // The background script will now send a generic 'urlCaptured' message,
       // and we'll find the button in the 'finding' state.
@@ -201,7 +201,7 @@ document.querySelectorAll('[id^="unitBox_item-"]').forEach(addDownloadButton);
 // Re-check for buttons when the tab becomes visible again
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
-    console.log('[content] Tab is visible again, re-checking for download buttons.');
+    // console.log('[content] Tab is visible again, re-checking for download buttons.');
     document.querySelectorAll('[id^="unitBox_item-"]').forEach(addDownloadButton);
   }
 });
@@ -274,7 +274,7 @@ document.addEventListener('visibilitychange', () => {
 })();
 // Listen for messages from the background script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log(`[content] Received message: ${request.action}`);
+  // console.log(`[content] Received message: ${request.action}`);
 
   if (request.action === 'urlCaptured') {
     // The background script no longer knows the unitKey, so we find the button
@@ -282,7 +282,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     const downloadButton = document.querySelector('button[data-state="finding"]');
     if (downloadButton) {
         const unitKey = downloadButton.id.replace('download-btn-', '');
-        console.log(`[content] URL captured for ${unitKey}, enabling button.`);
+        // console.log(`[content] URL captured for ${unitKey}, enabling button.`);
         
         // Store the URL against the correct unitKey
         chrome.storage.local.set({ [unitKey]: request.url });
@@ -303,7 +303,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // Collapse the button to its icon form
         downloadButton.style.width = '32px';
     } else {
-        console.warn('[content] Received a urlCaptured message, but no button was in the "finding" state.');
+        // console.warn('[content] Received a urlCaptured message, but no button was in the "finding" state.');
     }
     return; // End processing for this message type
   }
@@ -311,12 +311,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   // For other messages, we still expect a unitKey
   const downloadButton = document.getElementById(`download-btn-${request.unitKey}`);
   if (!downloadButton) {
-      console.error(`[content] Could not find button with unitKey: ${request.unitKey}`);
+      // console.error(`[content] Could not find button with unitKey: ${request.unitKey}`);
       return;
   }
 
   if (request.action === 'downloadReady') {
-    console.log(`[content] Download is ready for ${request.filename}`);
+    // console.log(`[content] Download is ready for ${request.filename}`);
     
     // Create a hidden link with the blob URL and click it
     const link = document.createElement('a');
@@ -359,7 +359,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }, 2000);
 
   } else if (request.action === 'downloadFailed') {
-    console.error(`[content] Download failed for ${request.filename}:`, request.error);
+    // console.error(`[content] Download failed for ${request.filename}:`, request.error);
     alert(`Download failed for ${request.filename}. See console for details.`);
     // Reset the button state to ready (green and round) so the user can try again
     downloadButton.setAttribute('data-state', 'ready');
