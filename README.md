@@ -1,5 +1,5 @@
 
-<img width="842" height="842" alt="Asset 10" src="https://github.com/user-attachments/assets/598e1ff6-a7b3-4783-bb9d-85c58119dfeb" />
+<img width="500" height="500" alt="Asset 10" src="https://github.com/user-attachments/assets/598e1ff6-a7b3-4783-bb9d-85c58119dfeb" />
 
 
 # Aigei Sound Downloader
